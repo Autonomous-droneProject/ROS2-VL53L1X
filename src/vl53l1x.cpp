@@ -33,35 +33,34 @@
 
 // Constructor /////////////////////////////////////////////////////
 Vl53l1x::Vl53l1x()
-  : address(AddressDefault)
-  , io_timeout(0) // no timeout
-  , did_timeout(false)
-  , calibrated(false)
-  , saved_vhv_init(0)
-  , saved_vhv_timeout(0)
-  , last_status(0)
-  , distance_mode(Unknown)
+    : address(AddressDefault), io_timeout(0) // no timeout
+      ,
+      did_timeout(false), calibrated(false), saved_vhv_init(0), saved_vhv_timeout(0), last_status(0), distance_mode(Unknown)
 {
 }
 
 // Public Methods //////////////////////////////////////////////////
 
-//Open the i2c port for reading and writing
-//and initialise the sensor
-bool Vl53l1x::init() {
+// Open the i2c port for reading and writing
+// and initialise the sensor
+bool Vl53l1x::init()
+{
   // Open it i2c port
-  if ((fd = open("/dev/i2c-1", O_RDWR)) < 0) {
-      return false;
+  if ((fd = open("/dev/i2c-1", O_RDWR)) < 0)
+  {
+    return false;
   }
 
   // Setup flow control
-  if (ioctl(fd, I2C_SLAVE, address) < 0) {
+  if (ioctl(fd, I2C_SLAVE, address) < 0)
+  {
     return false;
   }
 
   // Check model ID and module type registers (values specified in datasheet)
   uint16_t modelID = readReg16Bit(VL53L1_IDENTIFICATION__MODEL_ID);
-  if (modelID != 0xEACC) return false;
+  if (modelID != 0xEACC)
+    return false;
 
   // VL53L1_software_reset() begin
   writeReg(SOFT_RESET, 0x00);
@@ -79,7 +78,8 @@ bool Vl53l1x::init() {
   // check last_status in case we still get a NACK to try to deal with it correctly
   while ((readReg(FIRMWARE__SYSTEM_STATUS) & 0x01) == 0 || last_status != 0)
   {
-    if (checkTimeoutExpired()) {
+    if (checkTimeoutExpired())
+    {
       did_timeout = true;
       return false;
     }
@@ -94,7 +94,6 @@ bool Vl53l1x::init() {
   osc_calibrate_val = readReg16Bit(RESULT__OSC_CALIBRATE_VAL);
 
   // VL53L1_DataInit() end
-
 
   // VL53L1_StaticInit() begin
 
@@ -117,11 +116,11 @@ bool Vl53l1x::init() {
   // that? (seems like it would disable 2V8 mode)
   writeReg16Bit(DSS_CONFIG__TARGET_TOTAL_RATE_MCPS, TargetRate); // should already be this value after reset
   writeReg(GPIO__TIO_HV_STATUS, 0x02);
-  writeReg(SIGMA_ESTIMATOR__EFFECTIVE_PULSE_WIDTH_NS, 8); // tuning parm default
+  writeReg(SIGMA_ESTIMATOR__EFFECTIVE_PULSE_WIDTH_NS, 8);    // tuning parm default
   writeReg(SIGMA_ESTIMATOR__EFFECTIVE_AMBIENT_WIDTH_NS, 16); // tuning parm default
   writeReg(ALGO__CROSSTALK_COMPENSATION_VALID_HEIGHT_MM, 0x01);
   writeReg(ALGO__RANGE_IGNORE_VALID_HEIGHT_MM, 0xFF);
-  writeReg(ALGO__RANGE_MIN_CLIP, 0); // tuning parm default
+  writeReg(ALGO__RANGE_MIN_CLIP, 0);               // tuning parm default
   writeReg(ALGO__CONSISTENCY_CHECK__TOLERANCE, 2); // tuning parm default
 
   // general config
@@ -132,7 +131,7 @@ bool Vl53l1x::init() {
   // timing config
   // most of these settings will be determined later by distance and timing
   // budget configuration
-  writeReg16Bit(RANGE_CONFIG__SIGMA_THRESH, 360); // tuning parm default
+  writeReg16Bit(RANGE_CONFIG__SIGMA_THRESH, 360);                  // tuning parm default
   writeReg16Bit(RANGE_CONFIG__MIN_COUNT_RATE_RTN_LIMIT_MCPS, 192); // tuning parm default
 
   // dynamic config
@@ -166,7 +165,7 @@ bool Vl53l1x::init() {
   // the API triggers this change in VL53L1_init_and_start_range() once a
   // measurement is started; assumes MM1 and MM2 are disabled
   writeReg16Bit(ALGO__PART_TO_PART_RANGE_OFFSET_MM,
-    readReg16Bit(MM_CONFIG__OUTER_OFFSET_MM) * 4);
+                readReg16Bit(MM_CONFIG__OUTER_OFFSET_MM) * 4);
 
   return true;
 }
@@ -178,7 +177,6 @@ void Vl53l1x::setAddress(uint8_t new_addr)
   address = new_addr;
 }
 
-
 // set distance mode to Short, Medium, or Long
 // based on VL53L1_SetDistanceMode()
 bool Vl53l1x::setDistanceMode(DistanceMode mode)
@@ -188,57 +186,57 @@ bool Vl53l1x::setDistanceMode(DistanceMode mode)
 
   switch (mode)
   {
-    case Short:
-      // from VL53L1_preset_mode_standard_ranging_short_range()
+  case Short:
+    // from VL53L1_preset_mode_standard_ranging_short_range()
 
-      // timing config
-      writeReg(RANGE_CONFIG__VCSEL_PERIOD_A, 0x07);
-      writeReg(RANGE_CONFIG__VCSEL_PERIOD_B, 0x05);
-      writeReg(RANGE_CONFIG__VALID_PHASE_HIGH, 0x38);
+    // timing config
+    writeReg(RANGE_CONFIG__VCSEL_PERIOD_A, 0x07);
+    writeReg(RANGE_CONFIG__VCSEL_PERIOD_B, 0x05);
+    writeReg(RANGE_CONFIG__VALID_PHASE_HIGH, 0x38);
 
-      // dynamic config
-      writeReg(SD_CONFIG__WOI_SD0, 0x07);
-      writeReg(SD_CONFIG__WOI_SD1, 0x05);
-      writeReg(SD_CONFIG__INITIAL_PHASE_SD0, 6); // tuning parm default
-      writeReg(SD_CONFIG__INITIAL_PHASE_SD1, 6); // tuning parm default
+    // dynamic config
+    writeReg(SD_CONFIG__WOI_SD0, 0x07);
+    writeReg(SD_CONFIG__WOI_SD1, 0x05);
+    writeReg(SD_CONFIG__INITIAL_PHASE_SD0, 6); // tuning parm default
+    writeReg(SD_CONFIG__INITIAL_PHASE_SD1, 6); // tuning parm default
 
-      break;
+    break;
 
-    case Medium:
-      // from VL53L1_preset_mode_standard_ranging()
+  case Medium:
+    // from VL53L1_preset_mode_standard_ranging()
 
-      // timing config
-      writeReg(RANGE_CONFIG__VCSEL_PERIOD_A, 0x0B);
-      writeReg(RANGE_CONFIG__VCSEL_PERIOD_B, 0x09);
-      writeReg(RANGE_CONFIG__VALID_PHASE_HIGH, 0x78);
+    // timing config
+    writeReg(RANGE_CONFIG__VCSEL_PERIOD_A, 0x0B);
+    writeReg(RANGE_CONFIG__VCSEL_PERIOD_B, 0x09);
+    writeReg(RANGE_CONFIG__VALID_PHASE_HIGH, 0x78);
 
-      // dynamic config
-      writeReg(SD_CONFIG__WOI_SD0, 0x0B);
-      writeReg(SD_CONFIG__WOI_SD1, 0x09);
-      writeReg(SD_CONFIG__INITIAL_PHASE_SD0, 10); // tuning parm default
-      writeReg(SD_CONFIG__INITIAL_PHASE_SD1, 10); // tuning parm default
+    // dynamic config
+    writeReg(SD_CONFIG__WOI_SD0, 0x0B);
+    writeReg(SD_CONFIG__WOI_SD1, 0x09);
+    writeReg(SD_CONFIG__INITIAL_PHASE_SD0, 10); // tuning parm default
+    writeReg(SD_CONFIG__INITIAL_PHASE_SD1, 10); // tuning parm default
 
-      break;
+    break;
 
-    case Long: // long
-      // from VL53L1_preset_mode_standard_ranging_long_range()
+  case Long: // long
+    // from VL53L1_preset_mode_standard_ranging_long_range()
 
-      // timing config
-      writeReg(RANGE_CONFIG__VCSEL_PERIOD_A, 0x0F);
-      writeReg(RANGE_CONFIG__VCSEL_PERIOD_B, 0x0D);
-      writeReg(RANGE_CONFIG__VALID_PHASE_HIGH, 0xB8);
+    // timing config
+    writeReg(RANGE_CONFIG__VCSEL_PERIOD_A, 0x0F);
+    writeReg(RANGE_CONFIG__VCSEL_PERIOD_B, 0x0D);
+    writeReg(RANGE_CONFIG__VALID_PHASE_HIGH, 0xB8);
 
-      // dynamic config
-      writeReg(SD_CONFIG__WOI_SD0, 0x0F);
-      writeReg(SD_CONFIG__WOI_SD1, 0x0D);
-      writeReg(SD_CONFIG__INITIAL_PHASE_SD0, 14); // tuning parm default
-      writeReg(SD_CONFIG__INITIAL_PHASE_SD1, 14); // tuning parm default
+    // dynamic config
+    writeReg(SD_CONFIG__WOI_SD0, 0x0F);
+    writeReg(SD_CONFIG__WOI_SD1, 0x0D);
+    writeReg(SD_CONFIG__INITIAL_PHASE_SD0, 14); // tuning parm default
+    writeReg(SD_CONFIG__INITIAL_PHASE_SD1, 14); // tuning parm default
 
-      break;
+    break;
 
-    default:
-      // unrecognized mode - do nothing
-      return false;
+  default:
+    // unrecognized mode - do nothing
+    return false;
   }
 
   // reapply timing budget
@@ -258,10 +256,16 @@ bool Vl53l1x::setMeasurementTimingBudget(uint32_t budget_us)
 {
   // assumes PresetMode is LOWPOWER_AUTONOMOUS
 
-  if (budget_us <= TimingGuard) { return false; }
+  if (budget_us <= TimingGuard)
+  {
+    return false;
+  }
 
   uint32_t range_config_timeout_us = budget_us -= TimingGuard;
-  if (range_config_timeout_us > 1100000) { return false; } // FDA_MAX_TIMING_BUDGET_US * 2
+  if (range_config_timeout_us > 1100000)
+  {
+    return false;
+  } // FDA_MAX_TIMING_BUDGET_US * 2
 
   range_config_timeout_us /= 2;
 
@@ -276,7 +280,10 @@ bool Vl53l1x::setMeasurementTimingBudget(uint32_t budget_us)
   // Timeout of 1000 is tuning parm default (TIMED_PHASECAL_CONFIG_TIMEOUT_US_DEFAULT)
   // via VL53L1_get_preset_mode_timing_cfg().
   uint32_t phasecal_timeout_mclks = timeoutMicrosecondsToMclks(1000, macro_period_us);
-  if (phasecal_timeout_mclks > 0xFF) { phasecal_timeout_mclks = 0xFF; }
+  if (phasecal_timeout_mclks > 0xFF)
+  {
+    phasecal_timeout_mclks = 0xFF;
+  }
   writeReg(PHASECAL_CONFIG__TIMEOUT_MACROP, phasecal_timeout_mclks);
 
   // "Update MM Timing A timeout"
@@ -287,11 +294,11 @@ bool Vl53l1x::setMeasurementTimingBudget(uint32_t budget_us)
   // but it probably doesn't matter because it seems like the MM ("mode
   // mitigation"?) sequence steps are disabled in low power auto mode anyway.
   writeReg16Bit(MM_CONFIG__TIMEOUT_MACROP_A, encodeTimeout(
-    timeoutMicrosecondsToMclks(1, macro_period_us)));
+                                                 timeoutMicrosecondsToMclks(1, macro_period_us)));
 
   // "Update Range Timing A timeout"
   writeReg16Bit(RANGE_CONFIG__TIMEOUT_MACROP_A, encodeTimeout(
-    timeoutMicrosecondsToMclks(range_config_timeout_us, macro_period_us)));
+                                                    timeoutMicrosecondsToMclks(range_config_timeout_us, macro_period_us)));
 
   // "Update Macro Period for Range B VCSEL Period"
   macro_period_us = calcMacroPeriod(readReg(RANGE_CONFIG__VCSEL_PERIOD_B));
@@ -299,11 +306,11 @@ bool Vl53l1x::setMeasurementTimingBudget(uint32_t budget_us)
   // "Update MM Timing B timeout"
   // (See earlier comment about MM Timing A timeout.)
   writeReg16Bit(MM_CONFIG__TIMEOUT_MACROP_B, encodeTimeout(
-    timeoutMicrosecondsToMclks(1, macro_period_us)));
+                                                 timeoutMicrosecondsToMclks(1, macro_period_us)));
 
   // "Update Range Timing B timeout"
   writeReg16Bit(RANGE_CONFIG__TIMEOUT_MACROP_B, encodeTimeout(
-    timeoutMicrosecondsToMclks(range_config_timeout_us, macro_period_us)));
+                                                    timeoutMicrosecondsToMclks(range_config_timeout_us, macro_period_us)));
 
   // VL53L1_calc_timeout_register_values() end
 
@@ -325,13 +332,13 @@ uint32_t Vl53l1x::getMeasurementTimingBudget()
   // "Get Range Timing A timeout"
 
   uint32_t range_config_timeout_us = timeoutMclksToMicroseconds(decodeTimeout(
-    readReg16Bit(RANGE_CONFIG__TIMEOUT_MACROP_A)), macro_period_us);
+                                                                    readReg16Bit(RANGE_CONFIG__TIMEOUT_MACROP_A)),
+                                                                macro_period_us);
 
   // VL53L1_get_timeouts_us() end
 
-  return  2 * range_config_timeout_us + TimingGuard;
+  return 2 * range_config_timeout_us + TimingGuard;
 }
-
 
 // Start continuous ranging measurements, with the given inter-measurement
 // period in milliseconds determining how often the sensor takes a measurement.
@@ -341,7 +348,7 @@ void Vl53l1x::startContinuous(uint32_t period_ms)
   writeReg32Bit(SYSTEM__INTERMEASUREMENT_PERIOD, period_ms * osc_calibrate_val);
 
   writeReg(SYSTEM__INTERRUPT_CLEAR, 0x01); // sys_interrupt_clear_range
-  writeReg(SYSTEM__MODE_START, 0x40); // mode_range__timed
+  writeReg(SYSTEM__MODE_START, 0x40);      // mode_range__timed
 }
 
 // Stop continuous measurements
@@ -361,7 +368,7 @@ void Vl53l1x::stopContinuous()
   }
   if (saved_vhv_timeout != 0)
   {
-     writeReg(VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, saved_vhv_timeout);
+    writeReg(VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, saved_vhv_timeout);
   }
 
   // "remove phasecal override"
@@ -413,7 +420,7 @@ uint16_t Vl53l1x::read_range(bool blocking)
 uint16_t Vl53l1x::readSingle(bool blocking)
 {
   writeReg(SYSTEM__INTERRUPT_CLEAR, 0x01); // sys_interrupt_clear_range
-  writeReg(SYSTEM__MODE_START, 0x10); // mode_range__single_shot
+  writeReg(SYSTEM__MODE_START, 0x10);      // mode_range__single_shot
 
   if (blocking)
   {
@@ -450,52 +457,51 @@ void Vl53l1x::setupManualCalibration()
 
   // "set loop bound to tuning param"
   writeReg(VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND,
-    (saved_vhv_timeout & 0x03) + (3 << 2)); // tuning parm default (LOWPOWERAUTO_VHV_LOOP_BOUND_DEFAULT)
+           (saved_vhv_timeout & 0x03) + (3 << 2)); // tuning parm default (LOWPOWERAUTO_VHV_LOOP_BOUND_DEFAULT)
 
   // "override phasecal"
   writeReg(PHASECAL_CONFIG__OVERRIDE, 0x01);
   writeReg(CAL_CONFIG__VCSEL_START, readReg(PHASECAL_RESULT__VCSEL_START));
 }
 
-//Write an 8-bit register
+// Write an 8-bit register
 void Vl53l1x::writeReg(uint16_t reg, uint8_t value)
 {
   uint8_t writeBuffer[3];
 
-  writeBuffer[0] = ((reg >> 8) & 0xFF);  // reg high byte
-  writeBuffer[1] = ( reg       & 0xFF);  // reg low byte
+  writeBuffer[0] = ((reg >> 8) & 0xFF); // reg high byte
+  writeBuffer[1] = (reg & 0xFF);        // reg low byte
   writeBuffer[2] = value;
 
   auto result = write(fd, writeBuffer, sizeof(writeBuffer));
   last_status = (result > 0) ? 0 : 1;
 }
 
-//Write an 16-bit register
+// Write an 16-bit register
 void Vl53l1x::writeReg16Bit(uint16_t reg, uint16_t value)
 {
   uint8_t writeBuffer[4];
 
-  writeBuffer[0] = ((reg >> 8)   & 0xFF);  // reg high byte
-  writeBuffer[1] = ( reg         & 0xFF);  // reg low byte
-  writeBuffer[2] = ((value >> 8) & 0xFF);  // value high byte
-  writeBuffer[3] = ( value       & 0xFF);  // value low byte
+  writeBuffer[0] = ((reg >> 8) & 0xFF);   // reg high byte
+  writeBuffer[1] = (reg & 0xFF);          // reg low byte
+  writeBuffer[2] = ((value >> 8) & 0xFF); // value high byte
+  writeBuffer[3] = (value & 0xFF);        // value low byte
 
   auto result = write(fd, writeBuffer, sizeof(writeBuffer));
   last_status = (result > 0) ? 0 : 1;
 }
-
 
 // Write a 32-bit register
 void Vl53l1x::writeReg32Bit(uint16_t reg, uint32_t value)
 {
   uint8_t writeBuffer[6];
 
-  writeBuffer[0] = ((reg >> 8)   & 0xFF);  // reg high byte
-  writeBuffer[1] = ( reg         & 0xFF);  // reg low byte
-  writeBuffer[2] = ((value >> 24) & 0xFF);  // value highest byte
+  writeBuffer[0] = ((reg >> 8) & 0xFF);    // reg high byte
+  writeBuffer[1] = (reg & 0xFF);           // reg low byte
+  writeBuffer[2] = ((value >> 24) & 0xFF); // value highest byte
   writeBuffer[3] = ((value >> 16) & 0xFF);
-  writeBuffer[4] = ((value >>  8) & 0xFF);
-  writeBuffer[5] = ( value       & 0xFF);  // value lowest byte
+  writeBuffer[4] = ((value >> 8) & 0xFF);
+  writeBuffer[5] = (value & 0xFF); // value lowest byte
 
   auto result = write(fd, writeBuffer, sizeof(writeBuffer));
   last_status = (result > 0) ? 0 : 1;
@@ -504,14 +510,14 @@ void Vl53l1x::writeReg32Bit(uint16_t reg, uint32_t value)
 // Read an 8-bit register
 uint8_t Vl53l1x::readReg(uint16_t reg)
 {
-  uint8_t  writeBuffer[2];
+  uint8_t writeBuffer[2];
 
-  writeBuffer[0] = ((reg >> 8) & 0xFF);  // reg high byte
-  writeBuffer[1] = (reg        & 0xFF);  // reg low byte
+  writeBuffer[0] = ((reg >> 8) & 0xFF); // reg high byte
+  writeBuffer[1] = (reg & 0xFF);        // reg low byte
 
-
-  if( write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer)) {
-    //something went wrong
+  if (write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer))
+  {
+    // something went wrong
     std::cout << "DEBUG: ERROR on write to i2c" << std::endl;
     return 0x00;
   }
@@ -522,41 +528,46 @@ uint8_t Vl53l1x::readReg(uint16_t reg)
   return readBuffer[0];
 }
 
-//Read 16 bits from a register
-uint16_t Vl53l1x::readReg16Bit(uint16_t reg) {
+// Read 16 bits from a register
+uint16_t Vl53l1x::readReg16Bit(uint16_t reg)
+{
 
-  uint8_t  writeBuffer[2];
-  writeBuffer[0] = ((reg >> 8) & 0xFF);  // reg high byte
-  writeBuffer[1] = (reg        & 0xFF);  // reg low byte
+  uint8_t writeBuffer[2];
+  writeBuffer[0] = ((reg >> 8) & 0xFF); // reg high byte
+  writeBuffer[1] = (reg & 0xFF);        // reg low byte
 
-  if( write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer)) {
-    //something went wrong
+  if (write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer))
+  {
+    // something went wrong
     std::cout << "ERROR on write to i2c" << std::endl;
     return 0x0000;
   }
 
   uint8_t readBuffer[2];
-  if( read(fd, readBuffer, sizeof(readBuffer)) < sizeof(readBuffer)) {
+  if (read(fd, readBuffer, sizeof(readBuffer)) < sizeof(readBuffer))
+  {
     std::cout << "Error on read from i2c" << std::endl;
     return 0x0000;
   }
 
-  uint16_t value = (uint16_t)readBuffer[0] << 8;  //value high byte
-  value |= readBuffer[1];                         // value low byte
+  uint16_t value = (uint16_t)readBuffer[0] << 8; // value high byte
+  value |= readBuffer[1];                        // value low byte
 
   return value;
 }
 
-void Vl53l1x::startTimeout() {
+void Vl53l1x::startTimeout()
+{
   timeout_start_ms = std::chrono::system_clock::now();
 }
 
-bool Vl53l1x::checkTimeoutExpired() {
-    // record end time
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> diff = end - timeout_start_ms;
+bool Vl53l1x::checkTimeoutExpired()
+{
+  // record end time
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> diff = end - timeout_start_ms;
 
-    return (io_timeout > 0) && ((uint16_t)(diff.count()*1000) > io_timeout);
+  return (io_timeout > 0) && ((uint16_t)(diff.count() * 1000) > io_timeout);
 }
 
 // Calculate macro period in microseconds (12.12 format) with given VCSEL period
@@ -624,24 +635,29 @@ uint16_t Vl53l1x::encodeTimeout(uint32_t timeout_mclks)
 
     return (ms_byte << 8) | (ls_byte & 0xFF);
   }
-  else { return 0; }
+  else
+  {
+    return 0;
+  }
 }
 
 // read measurement results into buffer
 void Vl53l1x::readResults()
 {
-  uint8_t  writeBuffer[2];
-  writeBuffer[0] = ((RESULT__RANGE_STATUS >> 8) & 0xFF);  // reg high byte
-  writeBuffer[1] = ( RESULT__RANGE_STATUS       & 0xFF);  // reg low byte
+  uint8_t writeBuffer[2];
+  writeBuffer[0] = ((RESULT__RANGE_STATUS >> 8) & 0xFF); // reg high byte
+  writeBuffer[1] = (RESULT__RANGE_STATUS & 0xFF);        // reg low byte
 
-  if( write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer)) {
-    //something went wrong
+  if (write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer))
+  {
+    // something went wrong
     std::cout << "ERROR on write to i2c" << std::endl;
     return;
   }
 
   uint8_t readBuffer[17];
-  if( read(fd, readBuffer, sizeof(readBuffer)) < sizeof(readBuffer)) {
+  if (read(fd, readBuffer, sizeof(readBuffer)) < sizeof(readBuffer))
+  {
     std::cout << "Error on read from i2c" << std::endl;
     return;
   }
@@ -650,14 +666,14 @@ void Vl53l1x::readResults()
   //[1] report_status: not used
   results.stream_count = readBuffer[2];
 
-  results.dss_actual_effective_spads_sd0  = (uint16_t)readBuffer[3] << 8; // high byte
-  results.dss_actual_effective_spads_sd0 |=           readBuffer[4];      // low byte
+  results.dss_actual_effective_spads_sd0 = (uint16_t)readBuffer[3] << 8; // high byte
+  results.dss_actual_effective_spads_sd0 |= readBuffer[4];               // low byte
 
   //[5] peak_signal_count_rate_mcps_sd0: not used
   //[6]
 
-  results.ambient_count_rate_mcps_sd0  = (uint16_t)readBuffer[7] << 8; // high byte
-  results.ambient_count_rate_mcps_sd0 |=           readBuffer[8];      // low byte
+  results.ambient_count_rate_mcps_sd0 = (uint16_t)readBuffer[7] << 8; // high byte
+  results.ambient_count_rate_mcps_sd0 |= readBuffer[8];               // low byte
 
   //[9] sigma_sd0: not used
   //[10]
@@ -665,11 +681,11 @@ void Vl53l1x::readResults()
   //[11] phase_sd0: not used
   //[12]
 
-  results.final_crosstalk_corrected_range_mm_sd0  = (uint16_t)readBuffer[13] << 8; // high byte
-  results.final_crosstalk_corrected_range_mm_sd0 |=           readBuffer[14];      // low byte
+  results.final_crosstalk_corrected_range_mm_sd0 = (uint16_t)readBuffer[13] << 8; // high byte
+  results.final_crosstalk_corrected_range_mm_sd0 |= readBuffer[14];               // low byte
 
-  results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0  = (uint16_t)readBuffer[15] << 8; // high byte
-  results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0 |=           readBuffer[16];      // low byte
+  results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0 = (uint16_t)readBuffer[15] << 8; // high byte
+  results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0 |= readBuffer[16];               // low byte
 }
 
 // perform Dynamic SPAD Selection calculation/update
@@ -683,11 +699,14 @@ void Vl53l1x::updateDSS()
     // "Calc total rate per spad"
 
     uint32_t totalRatePerSpad =
-      (uint32_t)results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0 +
-      results.ambient_count_rate_mcps_sd0;
+        (uint32_t)results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0 +
+        results.ambient_count_rate_mcps_sd0;
 
     // "clip to 16 bits"
-    if (totalRatePerSpad > 0xFFFF) { totalRatePerSpad = 0xFFFF; }
+    if (totalRatePerSpad > 0xFFFF)
+    {
+      totalRatePerSpad = 0xFFFF;
+    }
 
     // "shift up to take advantage of 32 bits"
     totalRatePerSpad <<= 16;
@@ -700,7 +719,10 @@ void Vl53l1x::updateDSS()
       uint32_t requiredSpads = ((uint32_t)TargetRate << 16) / totalRatePerSpad;
 
       // "clip to 16 bit"
-      if (requiredSpads > 0xFFFF) { requiredSpads = 0xFFFF; }
+      if (requiredSpads > 0xFFFF)
+      {
+        requiredSpads = 0xFFFF;
+      }
 
       // "override DSS config"
       writeReg16Bit(DSS_CONFIG__MANUAL_EFFECTIVE_SPADS_SELECT, requiredSpads);
@@ -714,10 +736,9 @@ void Vl53l1x::updateDSS()
   // divide by zero.
   // "We want to gracefully set a spad target, not just exit with an error"
 
-   // "set target to mid point"
-   writeReg16Bit(DSS_CONFIG__MANUAL_EFFECTIVE_SPADS_SELECT, 0x8000);
+  // "set target to mid point"
+  writeReg16Bit(DSS_CONFIG__MANUAL_EFFECTIVE_SPADS_SELECT, 0x8000);
 }
-
 
 // get range, status, rates from results buffer
 // based on VL53L1_GetRangingMeasurementData()
@@ -737,68 +758,68 @@ void Vl53l1x::getRangingData()
 
   // set range_status in ranging_data based on value of RESULT__RANGE_STATUS register
   // mostly based on ConvertStatusLite()
-  switch(results.range_status)
+  switch (results.range_status)
   {
-    case 17: // MULTCLIPFAIL
-    case 2: // VCSELWATCHDOGTESTFAILURE
-    case 1: // VCSELCONTINUITYTESTFAILURE
-    case 3: // NOVHVVALUEFOUND
-      // from SetSimpleData()
-      ranging_data.range_status = HardwareFail;
-      break;
+  case 17: // MULTCLIPFAIL
+  case 2:  // VCSELWATCHDOGTESTFAILURE
+  case 1:  // VCSELCONTINUITYTESTFAILURE
+  case 3:  // NOVHVVALUEFOUND
+    // from SetSimpleData()
+    ranging_data.range_status = HardwareFail;
+    break;
 
-    case 13: // USERROICLIP
-     // from SetSimpleData()
-      ranging_data.range_status = MinRangeFail;
-      break;
+  case 13: // USERROICLIP
+           // from SetSimpleData()
+    ranging_data.range_status = MinRangeFail;
+    break;
 
-    case 18: // GPHSTREAMCOUNT0READY
-      ranging_data.range_status = SynchronizationInt;
-      break;
+  case 18: // GPHSTREAMCOUNT0READY
+    ranging_data.range_status = SynchronizationInt;
+    break;
 
-    case 5: // RANGEPHASECHECK
-      ranging_data.range_status =  OutOfBoundsFail;
-      break;
+  case 5: // RANGEPHASECHECK
+    ranging_data.range_status = OutOfBoundsFail;
+    break;
 
-    case 4: // MSRCNOTARGET
-      ranging_data.range_status = SignalFail;
-      break;
+  case 4: // MSRCNOTARGET
+    ranging_data.range_status = SignalFail;
+    break;
 
-    case 6: // SIGMATHRESHOLDCHECK
-      ranging_data.range_status = SigmaFail;
-      break;
+  case 6: // SIGMATHRESHOLDCHECK
+    ranging_data.range_status = SigmaFail;
+    break;
 
-    case 7: // PHASECONSISTENCY
-      ranging_data.range_status = WrapTargetFail;
-      break;
+  case 7: // PHASECONSISTENCY
+    ranging_data.range_status = WrapTargetFail;
+    break;
 
-    case 12: // RANGEIGNORETHRESHOLD
-      ranging_data.range_status = XtalkSignalFail;
-      break;
+  case 12: // RANGEIGNORETHRESHOLD
+    ranging_data.range_status = XtalkSignalFail;
+    break;
 
-    case 8: // MINCLIP
-      ranging_data.range_status = RangeValidMinRangeClipped;
-      break;
+  case 8: // MINCLIP
+    ranging_data.range_status = RangeValidMinRangeClipped;
+    break;
 
-    case 9: // RANGECOMPLETE
-      // from VL53L1_copy_sys_and_core_results_to_range_results()
-      if (results.stream_count == 0)
-      {
-        ranging_data.range_status = RangeValidNoWrapCheckFail;
-      }
-      else
-      {
-        ranging_data.range_status = RangeValid;
-      }
-      break;
+  case 9: // RANGECOMPLETE
+    // from VL53L1_copy_sys_and_core_results_to_range_results()
+    if (results.stream_count == 0)
+    {
+      ranging_data.range_status = RangeValidNoWrapCheckFail;
+    }
+    else
+    {
+      ranging_data.range_status = RangeValid;
+    }
+    break;
 
-    default:
-      ranging_data.range_status = None;
+  default:
+    ranging_data.range_status = None;
   }
 
   // from SetSimpleData()
   ranging_data.peak_signal_count_rate_MCPS =
-    countRateFixedToFloat(results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0);
+      countRateFixedToFloat(results.peak_signal_count_rate_crosstalk_corrected_mcps_sd0);
   ranging_data.ambient_count_rate_MCPS =
-    countRateFixedToFloat(results.ambient_count_rate_mcps_sd0);
+      countRateFixedToFloat(results.ambient_count_rate_mcps_sd0);
 }
