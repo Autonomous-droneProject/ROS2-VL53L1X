@@ -33,9 +33,10 @@
 
 // Constructor /////////////////////////////////////////////////////
 Vl53l1x::Vl53l1x()
-    : address(AddressDefault), io_timeout(0) // no timeout
-      ,
-      did_timeout(false), calibrated(false), saved_vhv_init(0), saved_vhv_timeout(0), last_status(0), distance_mode(Unknown)
+    : last_status(0), did_timeout(false), 
+      address(AddressDefault), io_timeout(0), // no timeout
+      calibrated(false), saved_vhv_init(0), 
+      saved_vhv_timeout(0), distance_mode(Unknown)
 {
 }
 
@@ -515,7 +516,7 @@ uint8_t Vl53l1x::readReg(uint16_t reg)
   writeBuffer[0] = ((reg >> 8) & 0xFF); // reg high byte
   writeBuffer[1] = (reg & 0xFF);        // reg low byte
 
-  if (write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer))
+  if (write(fd, writeBuffer, sizeof(writeBuffer)) < (long int)(sizeof(writeBuffer)))
   {
     // something went wrong
     std::cout << "DEBUG: ERROR on write to i2c" << std::endl;
@@ -536,7 +537,7 @@ uint16_t Vl53l1x::readReg16Bit(uint16_t reg)
   writeBuffer[0] = ((reg >> 8) & 0xFF); // reg high byte
   writeBuffer[1] = (reg & 0xFF);        // reg low byte
 
-  if (write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer))
+  if (write(fd, writeBuffer, sizeof(writeBuffer)) < (long int)(sizeof(writeBuffer)))
   {
     // something went wrong
     std::cout << "ERROR on write to i2c" << std::endl;
@@ -544,7 +545,7 @@ uint16_t Vl53l1x::readReg16Bit(uint16_t reg)
   }
 
   uint8_t readBuffer[2];
-  if (read(fd, readBuffer, sizeof(readBuffer)) < sizeof(readBuffer))
+  if (read(fd, readBuffer, sizeof(readBuffer)) < (long int)(sizeof(readBuffer)))
   {
     std::cout << "Error on read from i2c" << std::endl;
     return 0x0000;
@@ -648,7 +649,7 @@ void Vl53l1x::readResults()
   writeBuffer[0] = ((RESULT__RANGE_STATUS >> 8) & 0xFF); // reg high byte
   writeBuffer[1] = (RESULT__RANGE_STATUS & 0xFF);        // reg low byte
 
-  if (write(fd, writeBuffer, sizeof(writeBuffer)) < sizeof(writeBuffer))
+  if (write(fd, writeBuffer, sizeof(writeBuffer)) < (long int)(sizeof(writeBuffer)))
   {
     // something went wrong
     std::cout << "ERROR on write to i2c" << std::endl;
@@ -656,7 +657,7 @@ void Vl53l1x::readResults()
   }
 
   uint8_t readBuffer[17];
-  if (read(fd, readBuffer, sizeof(readBuffer)) < sizeof(readBuffer))
+  if (read(fd, readBuffer, sizeof(readBuffer)) < (long int)(sizeof(readBuffer)))
   {
     std::cout << "Error on read from i2c" << std::endl;
     return;
