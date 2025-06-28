@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "vl53l1x.hpp" // Library for the range sensor
+#include "vl53l1x/vl53l1x.hpp" // Library for the range sensor
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/range.hpp"

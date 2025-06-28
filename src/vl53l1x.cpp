@@ -29,7 +29,7 @@
 #include <iostream>
 #include <string>
 
-#include "vl53l1x.hpp"
+#include "vl53l1x/vl53l1x.hpp"
 
 // Constructor /////////////////////////////////////////////////////
 Vl53l1x::Vl53l1x()
