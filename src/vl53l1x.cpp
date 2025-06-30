@@ -33,9 +33,9 @@
 
 // Constructor /////////////////////////////////////////////////////
 Vl53l1x::Vl53l1x()
-    : last_status(0), did_timeout(false), 
-      address(AddressDefault), io_timeout(0), // no timeout
-      calibrated(false), saved_vhv_init(0), 
+    : address(AddressDefault), last_status(0), 
+      did_timeout(false), io_timeout(0), // no timeout
+      calibrated(false), saved_vhv_init(0),
       saved_vhv_timeout(0), distance_mode(Unknown)
 {
 }
