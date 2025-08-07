@@ -2,9 +2,8 @@
 
 namespace vl53l1x {
 Vl53l1xNode::Vl53l1xNode(const rclcpp::NodeOptions &options)
-    : rclcpp::Node("vl53l1x_node", options), tca_driver_("/dev/i2c-1", 0x70),
-      sensor("dev/i2c-1") {
-  // --- Declare and get params ---
+    : rclcpp::Node("vl53l1x_node", options), sensor("dev/i2c-1") {
+  // --- 1. Declare and get params ---
   RCLCPP_INFO(this->get_logger(), "Starting VL53L1X Ros node...");
   i2c_bus_param_ =
       this->declare_parameter<std::string>("i2c_bus", "/dev/i2c-1");
@@ -17,51 +16,108 @@ Vl53l1xNode::Vl53l1xNode(const rclcpp::NodeOptions &options)
       this->declare_parameter<unsigned int>("timing_budget", 50000);
   freq_ = this->declare_parameter<double>("publish_rate", 10.0);
 
-  // --- Iniitalize drivers ---
-  sensor = Vl53l1x(i2c_bus_param_);
-  if (!sensor.init()) {
-    RCLCPP_ERROR(this->get_logger(), "VL53L1X offline!");
-  }
+  // --- 2. Create the service client to the central TCA node ---
+    select_channel_client_ = this->create_client<tca9548a::srv::SelectChannel>("tca_node/select_channel");
+    
+    // Wait for the service to be available before proceeding with initialization
+    if (!select_channel_client_->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_FATAL(this->get_logger(), "TCA select_channel service not available. Node cannot initialize.");
+        return;
+    }
+    
+    // --- 3. Perform the INITIAL channel selection and sensor setup ---
+    auto request = std::make_shared<tca9548a::srv::SelectChannel::Request>();
+    request->channel = vl53l1x_channel_param_;
+    auto result_future = select_channel_client_->async_send_request(request);
 
-  sensor.setDistanceMode(Vl53l1x::Short);
-  sensor.setTimeout(timeout_);
-  sensor.setMeasurementTimingBudget(timing_budget_);
+    // Wait for the response to complete. This is safe in the constructor.
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future) != rclcpp::FutureReturnCode::SUCCESS) {
+        RCLCPP_FATAL(this->get_logger(), "Failed to call TCA select_channel service for initial setup.");
+        return;
+    }
 
-  // --- Begin measuring ---
-  sensor.startContinuous(static_cast<int>(1000.0 / freq_));
+    auto result = result_future.get();
+    if (!result->success) {
+        RCLCPP_FATAL(this->get_logger(), "TCA failed to select channel %d during initialization. Node cannot proceed.", vl53l1x_channel_param_);
+        return;
+    }
 
-  // --- Setup publisher ---
-  publisher_ =
-      this->create_publisher<sensor_msgs::msg::Range>("vl53l1x/range", 5);
-  timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(static_cast<int>(1000.0 / freq_)),
-      std::bind(&Vl53l1xNode::timer_callback, this));
+    // Now that the channel is selected, we can initialize the sensor driver
+    sensor = Vl53l1x(i2c_bus_param_);
+    
+    if (!sensor.init()) {
+        RCLCPP_FATAL(this->get_logger(), "Failed to initialize VL53L1X sensor on channel %d", vl53l1x_channel_param_);
+        return;
+    }
+
+    auto deselect_request = std::make_shared<tca9548a::srv::SelectChannel::Request>();
+    deselect_request->channel = 0x00; // A special channel 0x00 to deselect all
+    select_channel_client_->async_send_request(deselect_request);
+
+    // --- 4. Set up ROS 2 communication ---
+    publisher_ = this->create_publisher<sensor_msgs::msg::Range>("distance", 10);
+    
+    auto publish_period = std::chrono::milliseconds(static_cast<int>(1000.0 / freq_));
+    timer_ = this->create_wall_timer(publish_period, std::bind(&Vl53l1xNode::timer_callback, this));
+    
+    RCLCPP_INFO(this->get_logger(), "Node initialized. Publishing at %.2f Hz.", freq_);
 }
+
 void Vl53l1xNode::timer_callback() {
-  int distance = sensor.read_range();
-  if (sensor.timeoutOccurred()) {
-    RCLCPP_ERROR(this->get_logger(), "Timeout Occured!");
-    distance = 0;
-  }
+    auto message = sensor_msgs::msg::Range();
 
-  rclcpp::Time now = this->get_clock()->now();
-  auto message = sensor_msgs::msg::Range();
-  message.header.frame_id = "vl53l1x";
-  message.header.stamp = now;
-  message.radiation_type = sensor_msgs::msg::Range::INFRARED;
-  message.field_of_view = 0.47; // Typically 27 degrees or 0,471239 radians
-  message.min_range = 0.14; // 140 mm.  (It is actully much less, but this makes
-                            // sense in the context
-  message.max_range = 3.00; // 3.6 m. in the dark, down to 73cm in bright light
+    if (!select_channel_client_->wait_for_service(std::chrono::seconds(1))) {
+        RCLCPP_ERROR(this->get_logger(), "TCA select_channel service not available. Cannot read sensor.");
+        message.range = std::numeric_limits<float>::infinity();
+        publisher_->publish(message);
+        return;
+    }
 
-  message.range = (float)distance / 1000.0; // range in meters
+    auto request = std::make_shared<tca9548a::srv::SelectChannel::Request>();
+    request->channel = vl53l1x_channel_param_;
+    auto result_future = select_channel_client_->async_send_request(request);
 
-  // from
-  // https://github.com/ros2/common_interfaces/blob/master/sensor_msgs/msg/Range.msg
-  // # (Note: values < range_min or > range_max should be discarded)
-  if ((message.range >= message.min_range) &&
-      (message.range <= message.max_range)) {
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future) != rclcpp::FutureReturnCode::SUCCESS) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to call TCA select_channel service.");
+        message.range = std::numeric_limits<float>::infinity();
+        publisher_->publish(message);
+        return;
+    }
+
+    auto result = result_future.get();
+    if (!result->success) {
+        RCLCPP_ERROR(this->get_logger(), "TCA failed to select channel %d. Cannot read sensor.", vl53l1x_channel_param_);
+        message.range = std::numeric_limits<float>::infinity();
+        publisher_->publish(message);
+        return;
+    }
+
+    uint16_t reading = sensor.read_range();
+    if (!sensor.timeoutOccurred()) {
+        message.header.stamp = this->now();
+        message.header.frame_id = "vl53l1x_link";
+        message.radiation_type = sensor_msgs::msg::Range::INFRARED;
+        message.field_of_view = 0.4712; 
+        message.min_range = 0.04;      
+        message.max_range = 1.00;      
+        message.range = reading / 1000.0f; 
+    } else {
+        reading = 0;
+        RCLCPP_ERROR(this->get_logger(), "Timeout Occured!");
+        message.header.stamp = this->now();
+        message.header.frame_id = "vl53l1x_link";
+        message.radiation_type = sensor_msgs::msg::Range::INFRARED;
+        message.field_of_view = 0.4712;
+        message.min_range = 0.04;
+        message.max_range = 1.00;
+        message.range = std::numeric_limits<float>::infinity(); 
+        RCLCPP_WARN(this->get_logger(), "Failed to read from sensor. Publishing invalid data.");
+    }
+    
+    auto deselect_request = std::make_shared<tca9548a::srv::SelectChannel::Request>();
+    deselect_request->channel = 0x00; // A special channel 0x00 to deselect all
+    select_channel_client_->async_send_request(deselect_request);
+
     publisher_->publish(message);
-  }
 }
 } // namespace vl53l1x
