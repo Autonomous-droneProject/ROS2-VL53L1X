@@ -1,4 +1,6 @@
 #pragma once
+#ifndef VL53L1X_VL53L1X_HPP_
+#define VL53L1X_VL53L1X_HPP_
 
 #include <stdio.h>
 #include <linux/i2c-dev.h> // for the ioctl() function
@@ -274,4 +276,6 @@ private:
   float countRateFixedToFloat(uint16_t count_rate_fixed) { return (float)count_rate_fixed / (1 << 7); }
 };
 };
+
+#endif
 
