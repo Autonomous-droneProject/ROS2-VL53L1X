@@ -32,8 +32,8 @@
 #include "vl53l1x/vl53l1x.hpp"
 namespace vl53l1x {
 // Constructor /////////////////////////////////////////////////////
-Vl53l1x::Vl53l1x()
-    : address(AddressDefault), last_status(0), 
+Vl53l1x::Vl53l1x(std::string i2c_bus)
+    : i2c_bus_(i2c_bus.c_str()), address(AddressDefault), last_status(0), 
       did_timeout(false), io_timeout(0), // no timeout
       calibrated(false), saved_vhv_init(0),
       saved_vhv_timeout(0), distance_mode(Unknown)
@@ -47,7 +47,7 @@ Vl53l1x::Vl53l1x()
 bool Vl53l1x::init()
 {
   // Open it i2c port
-  if ((fd = open("/dev/i2c-1", O_RDWR)) < 0)
+  if ((fd = open(i2c_bus_, O_RDWR)) < 0)
   {
     return false;
   }

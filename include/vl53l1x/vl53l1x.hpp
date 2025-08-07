@@ -93,7 +93,7 @@ namespace vl53l1x {
 class Vl53l1x
 {
 public:
-  Vl53l1x();
+  Vl53l1x(std::string i2c_bus = "/dev/i2c-1");
 
   enum DistanceMode
   {
@@ -196,6 +196,7 @@ private:
   // VariablesAddressDefault
   int fd; // File Descriptor
 
+  const char* i2c_bus_; // I2C Bus
   uint8_t address; // I2C address
 
   // for storing values read from RESULT__RANGE_STATUS (0x0089)
