@@ -87,6 +87,7 @@
 // Update DSS registers
 #define DSS_CONFIG__MANUAL_EFFECTIVE_SPADS_SELECT 0x0054
 
+namespace vl53l1x {
 class Vl53l1x
 {
 public:
@@ -272,3 +273,5 @@ private:
   // Convert count rate from fixed point 9.7 format to float
   float countRateFixedToFloat(uint16_t count_rate_fixed) { return (float)count_rate_fixed / (1 << 7); }
 };
+};
+

@@ -30,7 +30,7 @@
 #include <string>
 
 #include "vl53l1x/vl53l1x.hpp"
-
+namespace vl53l1x {
 // Constructor /////////////////////////////////////////////////////
 Vl53l1x::Vl53l1x()
     : address(AddressDefault), last_status(0), 
@@ -824,3 +824,5 @@ void Vl53l1x::getRangingData()
   ranging_data.ambient_count_rate_MCPS =
       countRateFixedToFloat(results.ambient_count_rate_mcps_sd0);
 }
+}
+
