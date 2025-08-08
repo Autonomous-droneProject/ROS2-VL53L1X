@@ -30,6 +30,7 @@ private:
 
   // Parameter values
   std::string i2c_bus_param_;
+  std::string tca_manager_node_name_param_;
   uint8_t tca_address_param_;
   uint8_t vl53l1x_channel_param_;
   uint8_t vl53l1x_address_param_;
