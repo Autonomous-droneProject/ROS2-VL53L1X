@@ -18,9 +18,9 @@ Vl53l1xNode::Vl53l1xNode(const rclcpp::NodeOptions &options)
   int vl53l1x_channel_int = this->declare_parameter<int>("vl53l1x_channel", 0);
   vl53l1x_channel_param_ = static_cast<uint8_t>(vl53l1x_channel_int);
 
-  timeout_ = this->declare_parameter<unsigned int>("timeout", 500);
+  timeout_ = this->declare_parameter<int>("timeout", 500);
   timing_budget_ =
-      this->declare_parameter<unsigned int>("timing_budget", 50000);
+      this->declare_parameter<int>("timing_budget", 50000);
   freq_ = this->declare_parameter<double>("publish_rate", 10.0);
 
   // --- 2. Create the service client to the central TCA node ---
@@ -157,3 +157,21 @@ void Vl53l1xNode::timer_callback() {
   publisher_->publish(message);
 }
 } // namespace vl53l1x
+
+int main(int argc, char *argv[])
+{
+    // Initialize the ROS 2 C++ client library
+    rclcpp::init(argc, argv);
+
+    // Create a shared pointer to your node
+    auto node = std::make_shared<vl53l1x::Vl53l1xNode>();
+
+    // Start the node's event loop. This will keep the node alive
+    // and process all callbacks (like the timer callback).
+    rclcpp::spin(node);
+
+    // Shutdown the ROS 2 C++ client library when the node is finished
+    rclcpp::shutdown();
+
+    return 0;
+}

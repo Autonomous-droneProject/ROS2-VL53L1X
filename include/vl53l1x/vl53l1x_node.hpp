@@ -2,6 +2,7 @@
 #define VL53L1X_VL53L1X_NODE_HPP_
 
 #include "tca9548a/tca9548a.hpp"
+#include "tca9548a/srv/select_channel.hpp"
 #include "vl53l1x/vl53l1x.hpp"
 #include <chrono>
 #include <functional>
@@ -34,8 +35,8 @@ private:
   uint8_t tca_address_param_;
   uint8_t vl53l1x_channel_param_;
   uint8_t vl53l1x_address_param_;
-  unsigned int timeout_;
-  unsigned int timing_budget_;
+  int timeout_;
+  int timing_budget_;
   double freq_;
 
   // Callback function for timer

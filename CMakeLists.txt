@@ -1,81 +1,61 @@
 cmake_minimum_required(VERSION 3.8)
 project(vl53l1x)
 
-# Set C++ standard
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Find necessary ROS 2 packages
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tca9548a REQUIRED)
 
-# ===================================================================
-# == 1. CREATE THE REUSABLE DRIVER LIBRARY                         ==
-# ===================================================================
-# This creates a library from the core sensor C++ file so it can be
-# shared with the node in this package and with other ROS 2 packages.
 add_library(vl53l1x_driver src/vl53l1x.cpp)
-
-# Specify the include directories for the library.
-# PUBLIC makes these directories available to any target that links to this library.
 target_include_directories(vl53l1x_driver PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
+target_link_libraries(vl53l1x_driver PUBLIC
+  tca9548a::tca9548a_driver
+)
 
-# ===================================================================
-# == 2. DEFINE THE EXECUTABLE NODE                                 ==
-# ===================================================================
-# This defines the main node that runs the sensor.
 add_executable(vl53l1x_node src/vl53l1x_node.cpp)
 
-# Specify ROS dependencies for the executable.
+# Use ament_target_dependencies for external ROS packages
 ament_target_dependencies(vl53l1x_node
   "rclcpp"
   "sensor_msgs"
+  "tca9548a"
 )
 
-# Link the executable against the driver library created above.
-target_link_libraries(vl53l1x_node vl53l1x_driver)
+# Use target_link_libraries for local libraries in the same package
+target_link_libraries(vl53l1x_node
+  vl53l1x_driver
+)
 
-
-# ===================================================================
-# == 3. SET UP INSTALLATION AND EXPORT RULES                       ==
-# ===================================================================
-# This section ensures all necessary files are placed in the `install`
-# directory after building, and that other packages can find our library.
-
-# Install the executable target.
+# --- Modern Installation & Export Rules for Jazzy ---
 install(TARGETS
   vl53l1x_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install the library target and define an export name.
 install(TARGETS vl53l1x_driver
-  EXPORT export_vl53l1x_driver
+  EXPORT vl53l1x_driver_targets
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
-# Install the public header files.
-install(DIRECTORY
-  include/
+install(DIRECTORY include/
   DESTINATION include
 )
 
-# Export the library target. This is crucial for other packages to be able
-# to find and link against `vl53l1x_driver` using find_package().
-ament_export_targets(export_vl53l1x_driver
+ament_export_targets(vl53l1x_driver_targets
   HAS_LIBRARY_TARGET
 )
 
-# This command must be at the end of the file.
+ament_export_dependencies(tca9548a)
+
 ament_package()

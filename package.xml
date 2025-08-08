@@ -2,15 +2,17 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>vl53l1x</name>
-  <version>0.1.2</version>
-  <description>Publish distance measured from the VL53L1X</description>
-  <maintainer email="eslaghuis@gmail.com">Eric Slaghuis</maintainer>
-  <license>Apache License 2.0</license>
+  <version>0.0.1</version>
+  <description>A ROS 2 package for the VL53L1X Time-of-Flight sensor using a centralized TCA9548A multiplexer.</description>
+  <maintainer email="65517819+Syndric@users.noreply.github.com">Syndric</maintainer>
+  <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <build_depend>tca9548a</build_depend>
+  <exec_depend>tca9548a</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
