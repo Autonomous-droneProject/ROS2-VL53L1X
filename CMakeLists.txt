@@ -33,7 +33,6 @@ ament_target_dependencies(vl53l1x_manager
 # Use target_link_libraries for local libraries in the same package
 target_link_libraries(vl53l1x_manager
   vl53l1x_driver
-  tca9548a_manager
 )
 
 # --- Modern Installation & Export Rules for Jazzy ---
