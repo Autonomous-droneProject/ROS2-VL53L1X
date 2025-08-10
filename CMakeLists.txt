@@ -21,23 +21,23 @@ target_link_libraries(vl53l1x_driver PUBLIC
   tca9548a::tca9548a_driver
 )
 
-add_executable(vl53l1x_node src/vl53l1x_node.cpp)
+add_executable(vl53l1x_manager src/vl53l1x_manager.cpp)
 
 # Use ament_target_dependencies for external ROS packages
-ament_target_dependencies(vl53l1x_node
+ament_target_dependencies(vl53l1x_manager
   "rclcpp"
   "sensor_msgs"
   "tca9548a"
 )
 
 # Use target_link_libraries for local libraries in the same package
-target_link_libraries(vl53l1x_node
+target_link_libraries(vl53l1x_manager
   vl53l1x_driver
 )
 
 # --- Modern Installation & Export Rules for Jazzy ---
 install(TARGETS
-  vl53l1x_node
+  vl53l1x_manager
   DESTINATION lib/${PROJECT_NAME}
 )
 
