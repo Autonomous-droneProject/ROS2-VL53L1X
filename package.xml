@@ -4,7 +4,7 @@
   <name>vl53l1x</name>
   <version>0.0.1</version>
   <description>A ROS 2 package for the VL53L1X Time-of-Flight sensor using a centralized TCA9548A multiplexer.</description>
-  <maintainer email="65517819+Syndric@users.noreply.github.com">Syndric</maintainer>
+  <maintainer email="medlaodip@gmail.com">Syndric</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
