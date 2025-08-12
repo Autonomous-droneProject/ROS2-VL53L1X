@@ -14,14 +14,14 @@ struct Config {
 };
 class Vl53l1xDevice : public tca9548a::I2CDevice {
 public:
-  Vl53l1xDevice(std::string i2c_bus, uint8_t sensor_address, Config config_);
+  Vl53l1xDevice();
+  Vl53l1xDevice(std::string i2c_bus, Config config_);
   virtual ~Vl53l1xDevice() = default;
   bool initialize() override;
   bool configure() override;
   tca9548a::msg::SensorData read() override;
 
 private:
-  uint8_t sensor_address_;
   vl53l1x::Vl53l1x sensor_;
 
   Config config_;

@@ -17,6 +17,7 @@ include_directories(include)
 
 add_library(vl53l1x_driver SHARED
   src/vl53l1x.cpp
+  src/vl53l1x_device.cpp
 )
 
 # Use ament_target_dependencies for external ROS packages
