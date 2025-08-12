@@ -13,10 +13,33 @@ bool Vl53l1xDevice::configure() {
   sensor_.startContinuous(static_cast<uint32_t>(1000.0 / config_.freq));
 }
 
-tca9548a::ReadResult Vl53l1xDevice::read() {
-  tca9548a::ReadResult result;
-  result.reading = sensor_.read_range();
-  result.success = !sensor_.timeoutOccurred();
-  return result;
+tca9548a::msg::SensorData Vl53l1xDevice::read() {
+  tca9548a::msg::SensorData data;
+
+  // Get the distance reading from the low-level driver
+  uint16_t reading = sensor_.read_range();
+  bool success = !sensor_.timeoutOccurred();
+
+  if (success) {
+    // Populate the header with a timestamp
+    data.header.stamp = rclcpp::Clock().now();
+    data.device_name = "VL53L1X";
+
+    // Add the distance reading as a key-value pair
+    diagnostic_msgs::msg::KeyValue distance_kv;
+    distance_kv.key = "distance_mm";
+    distance_kv.value = std::to_string(reading);
+    data.values.push_back(distance_kv);
+    
+    // You can add more data here if needed (e.g., status codes)
+  } else {
+    // On failure, return an empty message with a null timestamp
+    data.header.stamp = rclcpp::Time(0, 0);
+  }
+
+  return data;
 }
 } // namespace vl53l1x
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(vl53l1x::Vl53l1xDevice, tca9548a::I2CDevice)

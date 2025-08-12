@@ -1,0 +1,9 @@
+<library path="vl53l1x_driver">
+  <class type="vl53l1x::Vl53l1xDevice"
+         base_class_type="tca9548a::I2CDevice"
+         name="VL53L1X">
+    <description>
+      A VL53L1X Time-of-Flight sensor device plugin.
+    </description>
+  </class>
+</library>

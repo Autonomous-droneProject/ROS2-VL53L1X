@@ -11,35 +11,23 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tca9548a REQUIRED)
+find_package(pluginlib REQUIRED)
 
-add_library(vl53l1x_driver src/vl53l1x.cpp)
-target_include_directories(vl53l1x_driver PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(vl53l1x_driver PUBLIC
-  tca9548a::tca9548a_driver
-)
+include_directories(include)
 
-add_executable(vl53l1x_manager src/vl53l1x_manager.cpp)
+add_library(vl53l1x_driver SHARED
+  src/vl53l1x.cpp
+)
 
 # Use ament_target_dependencies for external ROS packages
-ament_target_dependencies(vl53l1x_manager
+ament_target_dependencies(vl53l1x_driver
   "rclcpp"
+  "pluginlib"
   "sensor_msgs"
   "tca9548a"
 )
 
-# Use target_link_libraries for local libraries in the same package
-target_link_libraries(vl53l1x_manager
-  vl53l1x_driver
-)
-
-# --- Modern Installation & Export Rules for Jazzy ---
-install(TARGETS
-  vl53l1x_manager
-  DESTINATION lib/${PROJECT_NAME}
-)
+pluginlib_export_plugin_description_file(vl53l1x_driver vl53l1x_plugins.xml)
 
 install(TARGETS vl53l1x_driver
   EXPORT vl53l1x_driver_targets
@@ -56,6 +44,11 @@ ament_export_targets(vl53l1x_driver_targets
   HAS_LIBRARY_TARGET
 )
 
-ament_export_dependencies(tca9548a)
+ament_export_dependencies(
+  rclcpp
+  pluginlib
+  tca9548a
+  sensor_msgs
+)
 
 ament_package()

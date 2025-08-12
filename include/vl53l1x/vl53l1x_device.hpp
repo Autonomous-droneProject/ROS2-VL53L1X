@@ -1,8 +1,9 @@
 #ifndef VL53L1X_VL53L1X_DEVICE_HPP_
 #define VL53L1X_Vl53L1X_DEVICE_HPP_
 
-#include "tca9548a/I2CDevice.hpp"
+#include "tca9548a/i2c_device.hpp"
 #include "tca9548a/tca9548a.hpp"
+#include "tca9548a/msg/sensor_data.hpp"
 #include "vl53l1x/vl53l1x.hpp"
 
 namespace vl53l1x {
@@ -17,7 +18,7 @@ public:
   virtual ~Vl53l1xDevice() = default;
   bool initialize() override;
   bool configure() override;
-  tca9548a::ReadResult read() override;
+  tca9548a::msg::SensorData read() override;
 
 private:
   uint8_t sensor_address_;

@@ -11,13 +11,14 @@
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
-  <build_depend>tca9548a</build_depend>
-  <exec_depend>tca9548a</exec_depend>
+  <depend>pluginlib</depend>
+  <depend>tca9548a</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
+  
   </export>
 </package>
