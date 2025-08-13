@@ -2,11 +2,15 @@
 
 namespace vl53l1x {
 Vl53l1xDevice::Vl53l1xDevice() {}
-Vl53l1xDevice::Vl53l1xDevice(std::string i2c_bus, Config config)
-    : sensor_(i2c_bus), config_(config) {}
+Vl53l1xDevice::Vl53l1xDevice(std::string i2c_bus, const std::map<std::string, std::any>& parameters)
+    : sensor_(i2c_bus), parameters_(parameters){
+    }
 bool Vl53l1xDevice::initialize() { return sensor_.init(); }
 
 bool Vl53l1xDevice::configure() {
+  config_.timeout = static_cast<int>(tca9548a::get_param<int64_t>(parameters_, std::string("timeout")));
+  config_.timing_budget = static_cast<int>(tca9548a::get_param<int64_t>(parameters_, std::string("timing_budget")));
+  config_.freq = tca9548a::get_param<double>(parameters_, std::string("freq"));
   sensor_.setDistanceMode(vl53l1x::Vl53l1x::DistanceMode::Short);
   sensor_.setMeasurementTimingBudget(config_.timing_budget);
   sensor_.setTimeout(config_.timeout);
